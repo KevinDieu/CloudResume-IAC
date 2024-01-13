@@ -26,6 +26,7 @@ module "gcp_project" {
     "dns.googleapis.com",            # Cloud DNS API
     "monitoring.googleapis.com",     # Cloud Monitoring API
     "secretmanager.googleapis.com",  # Secret Manager API
+    "cloudkms.googleapis.com",       # Cloud Key Management Service (KMS) API
   ]
 
 }
@@ -44,9 +45,7 @@ module "service_accounts" {
 
 }
 
-locals {
-  cluster_name = "cluster"
-}
+
 
 # GKE configuration
 module "gke" {
@@ -157,5 +156,47 @@ module "vpc" {
         ip_cidr_range = "192.168.64.0/18"
       }
     ]
+  }
+}
+
+# GCP Bucket Remote State
+
+data "google_project" "project" {}
+
+module "backend_bucket" {
+  source = "./backend_bucket"
+}
+
+# Enable Cloud Storage service account to encrypt/decrypt Cloud KMS Keys
+resource "google_project_iam_member" "kms_iam" {
+  project = data.google_project.project.project_id
+  role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member  = "serviceAccount:service-${data.google_project.project.number}@gs-project-accounts.iam.gserviceaccount.com"
+}
+
+# Create Encryption Keys
+resource "google_kms_key_ring" "terraform_state" {
+  name     = "${local.bucket_name}-keyring"
+  location = "us"
+}
+
+resource "google_kms_crypto_key" "terraform_state_bucket" {
+  name     = "${local.bucket_name}-key"
+  key_ring = google_kms_key_ring.terraform_state.id
+  rotation_period = 90
+}
+
+# Create Storage Bucket
+resource "google_storage_bucket" "remote_state" {
+  name          = local.bucket_name
+  depends_on    = [module.gcp_project, google_project_iam_member.kms_iam]
+  force_destroy = false
+  location      = "US"
+  storage_class = "STANDARD"
+  versioning {
+    enabled = true
+  }
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.terraform_state_bucket.id
   }
 }
