@@ -1,10 +1,15 @@
 variable "org_id" {
-  type = string
-  description  = "ID of target GCP Organization"
+  type        = string
+  description = "ID of target GCP Organization"
 }
 
 variable "project_id" {
   type = string
+}
+
+variable "billing_account_id" {
+  type        = string
+  description = "ID of billing account to use for project"
 }
 
 variable "region" {
@@ -37,14 +42,13 @@ variable "subnetwork" {
 }
 
 variable "labels" {
-  type = map()
+  type = map(string)
   default = {
-    env = var.project_id
     application = "cloudresume"
   }
 }
 
 variable "gke_service_account_name" {
-  type = string
+  type    = string
   default = "gke-serviceaccount"
 }

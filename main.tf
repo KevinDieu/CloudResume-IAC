@@ -1,3 +1,35 @@
+# Project Configuration
+
+data "google_billing_account" "billing_account" {
+  billing_account = var.billing_account_id
+}
+
+import {
+  to = module.gcp_project.module.project-factory.google_project.main
+  id = "cloudresume-dieudonnetech"
+
+}
+
+module "gcp_project" {
+  source          = "terraform-google-modules/project-factory/google"
+  version         = "14.4.0"
+  name            = var.project_id
+  org_id          = var.org_id
+  billing_account = data.google_billing_account.billing_account.id
+  lien            = true
+
+  activate_apis = [
+    "compute.googleapis.com",        # Compute Engine API
+    "container.googleapis.com",      # Kubernetes Engine API
+    "iam.googleapis.com",            # Identity and Access Management (IAM) API
+    "iamcredentials.googleapis.com", # IAM Service Account Credentials API
+    "dns.googleapis.com",            # Cloud DNS API
+    "monitoring.googleapis.com",     # Cloud Monitoring API
+    "secretmanager.googleapis.com",  # Secret Manager API
+  ]
+
+}
+
 # Service account
 module "service_accounts" {
   source     = "terraform-google-modules/service-accounts/google"
