@@ -1,5 +1,4 @@
 # Project Configuration
-
 data "google_billing_account" "billing_account" {
   billing_account = var.billing_account_id
 }
@@ -160,43 +159,18 @@ module "vpc" {
 }
 
 # GCP Bucket Remote State
-
 data "google_project" "project" {}
 
+# # Import existing bucket and key objects
+# import {
+#   to = module.backend_bucket.google_storage_bucket.remote_state
+#   id = local.bucket_name
+# }
+
 module "backend_bucket" {
-  source = "./backend_bucket"
-}
-
-# Enable Cloud Storage service account to encrypt/decrypt Cloud KMS Keys
-resource "google_project_iam_member" "kms_iam" {
-  project = data.google_project.project.project_id
-  role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member  = "serviceAccount:service-${data.google_project.project.number}@gs-project-accounts.iam.gserviceaccount.com"
-}
-
-# Create Encryption Keys
-resource "google_kms_key_ring" "terraform_state" {
-  name     = "${local.bucket_name}-keyring"
-  location = "us"
-}
-
-resource "google_kms_crypto_key" "terraform_state_bucket" {
-  name     = "${local.bucket_name}-key"
-  key_ring = google_kms_key_ring.terraform_state.id
-  rotation_period = 90
-}
-
-# Create Storage Bucket
-resource "google_storage_bucket" "remote_state" {
-  name          = local.bucket_name
-  depends_on    = [module.gcp_project, google_project_iam_member.kms_iam]
-  force_destroy = false
-  location      = "US"
-  storage_class = "STANDARD"
-  versioning {
-    enabled = true
-  }
-  encryption {
-    default_kms_key_name = google_kms_crypto_key.terraform_state_bucket.id
-  }
+  source         = "./backend_bucket"
+  depends_on     = [module.gcp_project]
+  project_id     = data.google_project.project.project_id
+  project_number = data.google_project.project.number
+  bucket_name    = local.bucket_name
 }
