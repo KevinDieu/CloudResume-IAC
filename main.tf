@@ -1,14 +1,15 @@
 # Project Configuration
 
+import {
+  to = module.gcp_project.module.project-factory.google_project.main
+  id = "cloudresume-dieudonnetech"
+}
+
 data "google_billing_account" "billing_account" {
   billing_account = var.billing_account_id
 }
 
-import {
-  to = module.gcp_project.module.project-factory.google_project.main
-  id = "cloudresume-dieudonnetech"
-
-}
+data "google_project" "project" {}
 
 module "gcp_project" {
   source          = "terraform-google-modules/project-factory/google"
