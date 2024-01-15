@@ -2,7 +2,7 @@
 resource "google_storage_bucket" "remote_state" {
   name = var.bucket_name
 
-  force_destroy = false
+  force_destroy = true
   location      = "US"
   storage_class = "STANDARD"
   versioning {
