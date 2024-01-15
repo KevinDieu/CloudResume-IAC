@@ -1,3 +1,9 @@
+variable "gcp_credentials" {
+  type        = string
+  sensitive   = true
+  description = "Google Cloud service account credentials"
+}
+
 variable "org_id" {
   type        = string
   description = "ID of target GCP Organization"
@@ -52,3 +58,4 @@ variable "gke_service_account_name" {
   type    = string
   default = "gke-serviceaccount"
 }
+
