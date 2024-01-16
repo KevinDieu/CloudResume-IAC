@@ -20,19 +20,23 @@ module "gcp_project" {
   lien            = true
 
   activate_apis = [
-    "compute.googleapis.com",        # Compute Engine API
-    "container.googleapis.com",      # Kubernetes Engine API
-    "iam.googleapis.com",            # Identity and Access Management (IAM) API
-    "iamcredentials.googleapis.com", # IAM Service Account Credentials API
-    "dns.googleapis.com",            # Cloud DNS API
-    "monitoring.googleapis.com",     # Cloud Monitoring API
-    "secretmanager.googleapis.com",  # Secret Manager API
+    "compute.googleapis.com",              # Compute Engine API
+    "container.googleapis.com",            # Kubernetes Engine API
+    "iam.googleapis.com",                  # Identity and Access Management (IAM) API
+    "iamcredentials.googleapis.com",       # IAM Service Account Credentials API
+    "dns.googleapis.com",                  # Cloud DNS API
+    "monitoring.googleapis.com",           # Cloud Monitoring API
+    "secretmanager.googleapis.com",        # Secret Manager API
+    "cloudbilling.googleapis.com",         # Cloud Billing API
+    "cloudresourcemanager.googleapis.com", # Cloud Resource Manager API
+    "serviceusage.googleapis.com",         # Service Usage API
+
   ]
 
 }
 
-# Service account
-module "service_accounts" {
+# Service accounts
+module "gke_service_account" {
   source       = "terraform-google-modules/service-accounts/google"
   version      = "4.2.2"
   project_id   = var.project_id
@@ -45,6 +49,19 @@ module "service_accounts" {
 
 }
 
+module "terraform_service_account" {
+  source       = "terraform-google-modules/service-accounts/google"
+  version      = "4.2.2"
+  project_id   = var.project_id
+  depends_on   = [module.gcp_project]
+  names        = ["cloudresume-terraform-sa"]
+  display_name = "CloudResume Terraform Service Account"
+  description  = "Service account to authenticate Terraform to manage Cloud Resume Project"
+  # Storage admin used for mounting Cloud Buckets as volumes
+  project_roles = ["${var.project_id}=>roles/owner", ]
+
+}
+
 locals {
   cluster_name = "cluster"
 }
@@ -53,7 +70,7 @@ locals {
 module "gke" {
   source     = "terraform-google-modules/kubernetes-engine/google"
   version    = "~> 29.0.0"
-  depends_on = [module.vpc, module.service_accounts, module.gcp_project]
+  depends_on = [module.vpc, module.gke_service_account, module.gcp_project]
   # Cluster Metadata
   count                   = var.cluster_count
   name                    = "${local.cluster_name}-01"
