@@ -42,6 +42,11 @@ variable "cluster_count" {
   type        = number
   default     = 1
   description = "Number of GKE Clusters to create"
+
+  validation {
+    condition = var.cluster_count <= 3
+    error_message = "Cluster count cannot be higher than 3"
+  }
 }
 
 variable "network_name" {
